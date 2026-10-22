@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuvio Release Tracker</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#090d16',
+                            card: '#111827',
+                            border: '#1f2937'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QRCode.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+
+<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- Header / Navbar -->
+    <header class="border-b border-slate-800/80 bg-slate-950/50 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid fa-satellite-dish text-base"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold tracking-tight text-white">Nuvio Tracker</h1>
+                    <p class="text-xs text-slate-400">Notifiche e Release Manager</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <!-- Selettore Profilo Nuvio -->
+                <div
+                    class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 shadow-inner">
+                    <i class="fa-solid fa-user-gear text-indigo-400 text-xs"></i>
+                    <select id="header-profile-select" onchange="changeActiveProfile(this.value)"
+                        class="bg-transparent text-xs text-slate-200 font-medium focus:outline-none cursor-pointer">
+                        <option value="">Caricamento profili...</option>
+                    </select>
+                </div>
+
+                <!-- Stato Connessione Nuvio -->
+                <div
+                    class="hidden sm:flex items-center space-x-2 bg-slate-900/60 border border-slate-800/80 px-3 py-1.5 rounded-xl">
+                    <div id="nuvio-status-dot" class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                    <span id="nuvio-status-text" class="text-xs font-medium text-slate-300">Non connesso</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+        <!-- Sidebar Navigation -->
+        <aside class="lg:col-span-1 space-y-2">
+            <button onclick="switchTab('dashboard')" id="tab-btn-dashboard"
+                class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 cursor-pointer">
+                <i class="fa-solid fa-chart-pie w-5"></i>
+                <span>Dashboard</span>
+            </button>
+            <button onclick="switchTab('history')" id="tab-btn-history"
+                class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 cursor-pointer">
+                <i class="fa-solid fa-clock-rotate-left w-5"></i>
+                <span>Cronologia Visione</span>
+            </button>
+            <button onclick="switchTab('library')" id="tab-btn-library"
+                class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 cursor-pointer">
+                <i class="fa-solid fa-film w-5"></i>
+                <span>Libreria Nuvio</span>
+            </button>
+            <button onclick="switchTab('settings')" id="tab-btn-settings"
+                class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 cursor-pointer">
+                <i class="fa-solid fa-sliders w-5"></i>
+                <span>Impostazioni</span>
+            </button>
+        </aside>
+
+        <!-- Content Area -->
+        <section class="lg:col-span-3 space-y-6">
+
+            <!-- TAB 0: Dashboard -->
+            <div id="tab-content-dashboard" class="space-y-6">
+                <div
+                    class="flex items-center justify-between flex-wrap gap-4 bg-slate-900/40 border border-slate-800/80 p-5 rounded-2xl">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Panoramica Generale</h2>
+                        <p class="text-xs text-slate-400">Stato del tracciamento e delle notifiche per il profilo
+                            selezionato.</p>
+                    </div>
+                    <button onclick="triggerManualCheck()"
+                        class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center space-x-2">
+                        <i class="fa-solid fa-sync text-[10px]"></i>
+                        <span>Verifica Ora</span>
+                    </button>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-slate-900/40 border border-slate-800/80 p-4 rounded-2xl flex items-center space-x-3">
+                        <div class="bg-indigo-500/10 text-indigo-400 p-3 rounded-xl border border-indigo-500/20">
+                            <i class="fa-solid fa-bell text-lg"></i>
+                        </div>
+                        <div>
+                            <div id="dash-active-shows" class="text-lg font-bold text-white">--</div>
+                            <div class="text-[11px] text-slate-400">Attive / contenuti monitorati</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/40 border border-slate-800/80 p-4 rounded-2xl flex items-center space-x-3">
+                        <div class="bg-sky-500/10 text-sky-400 p-3 rounded-xl border border-sky-500/20">
+                            <i class="fa-brands fa-telegram text-lg"></i>
+                        </div>
+                        <div>
+                            <div id="dash-telegram-user" class="text-xs font-bold text-white truncate max-w-[120px]">--
+                            </div>
+                            <div class="text-[11px] text-slate-400">Telegram Collegato</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/40 border border-slate-800/80 p-4 rounded-2xl flex items-center space-x-3">
+                        <div class="bg-emerald-500/10 text-emerald-400 p-3 rounded-xl border border-emerald-500/20">
+                            <i class="fa-solid fa-clock text-lg"></i>
+                        </div>
+                        <div>
+                            <div id="dash-interval" class="text-lg font-bold text-white">--</div>
+                            <div class="text-[11px] text-slate-400">Intervallo Controllo</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/40 border border-slate-800/80 p-4 rounded-2xl flex items-center space-x-3">
+                        <div class="bg-amber-500/10 text-amber-400 p-3 rounded-xl border border-amber-500/20">
+                            <i class="fa-solid fa-language text-lg"></i>
+                        </div>
+                        <div>
+                            <div id="dash-lang" class="text-lg font-bold text-white">--</div>
+                            <div class="text-[11px] text-slate-400">Lingua Doppiaggio</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Releases Preview -->
+                <div class="bg-slate-900/30 border border-slate-800/80 rounded-2xl p-5 space-y-4 shadow-xl">
+                    <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-tv text-indigo-400"></i>
+                        <span>Ultime Serie Monitorate</span>
+                    </h3>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="border-b border-slate-800 bg-slate-950/60 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                    <th class="py-3 px-4">Titolo</th>
+                                    <th class="py-3 px-4 text-center">Ultimo Episodio</th>
+                                    <th class="py-3 px-4 text-center">Stato Notifica</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-recent-table" class="divide-y divide-slate-800/60 text-sm">
+                                <tr>
+                                    <td colspan="3" class="py-8 text-center text-slate-500">Caricamento in corso...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 1: Cronologia Visione -->
+            <div id="tab-content-history" class="space-y-6 hidden">
+                <div
+                    class="flex items-center justify-between flex-wrap gap-4 bg-slate-900/40 border border-slate-800/80 p-5 rounded-2xl">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Cronologia Visione</h2>
+                        <p class="text-xs text-slate-400">Gestisci lo stato delle notifiche per le serie viste in questo
+                            profilo.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="toggleAllNotifications('history', true)"
+                            class="bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 text-xs font-semibold px-3 py-2 rounded-lg transition cursor-pointer flex items-center space-x-2">
+                            <i class="fa-solid fa-bell text-[10px]"></i>
+                            <span>Attiva tutte</span>
+                        </button>
+                        <button onclick="toggleAllNotifications('history', false)"
+                            class="bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 text-xs font-semibold px-3 py-2 rounded-lg transition cursor-pointer flex items-center space-x-2">
+                            <i class="fa-solid fa-bell-slash text-[10px]"></i>
+                            <span>Disattiva tutte</span>
+                        </button>
+                        <button onclick="triggerManualCheck()"
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center space-x-2">
+                            <i class="fa-solid fa-sync text-[10px]"></i>
+                            <span>Verifica Ora</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/30 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="border-b border-slate-800 bg-slate-950/60 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                    <th class="py-3 px-4">Titolo</th>
+                                    <th class="py-3 px-4 text-center">Episodio</th>
+                                    <th class="py-3 px-4 text-center">Notifiche</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body" class="divide-y divide-slate-800/60 text-sm">
+                                <tr>
+                                    <td colspan="3" class="py-8 text-center text-slate-500">Caricamento in corso...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Libreria Nuvio -->
+            <div id="tab-content-library" class="space-y-6 hidden">
+                <div
+                    class="bg-slate-900/40 border border-slate-800/80 p-5 rounded-2xl flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Libreria Nuvio</h2>
+                        <p class="text-xs text-slate-400">Elementi sincronizzati dalla tua libreria Nuvio.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="toggleAllNotifications('library', true)"
+                            class="bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 text-xs font-semibold px-3 py-2 rounded-lg transition cursor-pointer flex items-center space-x-2">
+                            <i class="fa-solid fa-bell text-[10px]"></i>
+                            <span>Attiva tutte</span>
+                        </button>
+                        <button onclick="toggleAllNotifications('library', false)"
+                            class="bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 text-xs font-semibold px-3 py-2 rounded-lg transition cursor-pointer flex items-center space-x-2">
+                            <i class="fa-solid fa-bell-slash text-[10px]"></i>
+                            <span>Disattiva tutte</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/30 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="border-b border-slate-800 bg-slate-950/60 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                    <th class="py-3 px-4">Titolo</th>
+                                    <th class="py-3 px-4">Tipo</th>
+                                    <th class="py-3 px-4 text-center">Stato</th>
+                                </tr>
+                            </thead>
+                            <tbody id="library-table-body" class="divide-y divide-slate-800/60 text-sm">
+                                <tr>
+                                    <td colspan="3" class="py-8 text-center text-slate-500">Caricamento in corso...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Impostazioni -->
+            <div id="tab-content-settings" class="space-y-6 hidden">
+                <div class="bg-slate-900/40 border border-slate-800/80 p-5 rounded-2xl">
+                    <h2 class="text-lg font-bold text-white">Impostazioni Applicazione</h2>
+                    <p class="text-xs text-slate-400">Configura le credenziali di accesso, l'intervallo di controllo e
+                        le notifiche Telegram.</p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6">
+
+                    <!-- CARD 1: Nuvio & Generale -->
+                    <div class="card-section rounded-2xl p-6 space-y-6 bg-slate-900/30 border border-slate-800/80">
+                        <!-- Sezione 1: Credenziali Nuvio -->
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-3">
+                                <div
+                                    class="bg-indigo-500/10 text-indigo-400 p-2.5 rounded-lg border border-indigo-500/20">
+                                    <i class="fa-solid fa-key text-base"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-bold text-white">Credenziali Nuvio</h3>
+                                    <p class="text-xs text-slate-400">Dati di accesso.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Email Nuvio</label>
+                                    <input type="email" id="s-nuvio-email"
+                                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Password Nuvio</label>
+                                    <div class="space-y-2">
+                                        <input type="password" id="s-nuvio-password"
+                                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                                        <label id="clear-nuvio-password-container"
+                                            class="hidden items-center gap-2 text-xs text-slate-400">
+                                            <input type="checkbox" id="s-clear-nuvio-password"
+                                                onchange="toggleSavedPasswordRemoval(this.checked)"
+                                                class="w-4 h-4 accent-indigo-600 rounded cursor-pointer">
+                                            <span>Rimuovi la password salvata</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="border-slate-800/80">
+
+                        <!-- Sezione 2: Intervallo aggiornamento e Lingua -->
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-3">
+                                <div
+                                    class="bg-indigo-500/10 text-indigo-400 p-2.5 rounded-lg border border-indigo-500/20">
+                                    <i class="fa-solid fa-clock text-base"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-bold text-white">Intervallo aggiornamento</h3>
+                                    <p class="text-xs text-slate-400">Frequenza di scansione automatica e preferenze.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Intervallo Controllo
+                                        (ore)</label>
+                                    <input type="number" id="s-check-interval" min="1" max="24"
+                                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Lingua
+                                        Doppiaggio</label>
+                                    <select id="s-dub-lang"
+                                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                                        <option value="ita">Italiano (ITA)</option>
+                                        <option value="eng">Inglese (ENG)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="border-slate-800/80">
+
+                        <!-- Addon Nuvio selezionati per il controllo delle uscite -->
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center space-x-3">
+                                    <div
+                                        class="bg-indigo-500/10 text-indigo-400 p-2.5 rounded-lg border border-indigo-500/20">
+                                        <i class="fa-solid fa-plug text-base"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-sm font-bold text-white">Addon Nuvio da controllare</h3>
+                                        <p class="text-xs text-slate-400">Per iniziare sono selezionati tutti gli addon
+                                            attivi; puoi restringere la selezione.</p>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="loadAvailableAddons()"
+                                    class="text-xs bg-slate-800 text-slate-300 hover:bg-slate-700 px-3 py-1.5 rounded-lg transition cursor-pointer">
+                                    Ricarica
+                                </button>
+                            </div>
+                            <div id="addon-list" class="space-y-2" aria-live="polite">
+                                <p class="text-xs text-slate-500">Caricamento addon...</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-2">
+                            <button onclick="saveSettings()"
+                                class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow-lg shadow-indigo-600/20 cursor-pointer">
+                                Salva Impostazioni
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- CARD 2: Telegram -->
+                    <div class="card-section rounded-2xl p-6 space-y-4 bg-slate-900/30 border border-slate-800/80">
+                        <div class="space-y-3 border-b border-slate-800/80 pb-5">
+                            <div>
+                                <h3 class="text-sm font-bold text-white">Token del tuo bot Telegram</h3>
+                                <p class="mt-1 text-xs text-slate-400">Crea un bot con
+                                    <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer"
+                                        class="text-sky-400 hover:text-sky-300 underline">@BotFather</a>,
+                                    invia <span class="font-mono text-slate-300">/newbot</span>, scegli nome e username,
+                                    poi incolla qui il token ricevuto. Il token resta in questa installazione e non
+                                    viene mostrato dopo il salvataggio.
+                                </p>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="password" id="s-telegram-bot-token" autocomplete="new-password"
+                                    placeholder="Incolla il token del bot"
+                                    class="min-w-0 flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
+                                <button type="button" onclick="saveTelegramToken()"
+                                    class="bg-sky-700 hover:bg-sky-600 text-white text-xs font-semibold px-4 py-2 rounded-lg transition cursor-pointer">
+                                    Salva token
+                                </button>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <label id="remove-telegram-token-container"
+                                    class="hidden items-center gap-2 text-xs text-slate-400">
+                                    <input type="checkbox" id="s-remove-telegram-token"
+                                        class="w-4 h-4 accent-red-600 rounded cursor-pointer">
+                                    <span>Rimuovi il token salvato</span>
+                                </label>
+                                <p id="telegram-token-status" class="text-xs text-slate-500" aria-live="polite"></p>
+                            </div>
+                            <p class="text-[11px] text-amber-300/80">Non condividere il token e non inserirlo in
+                                screenshot o repository. Se viene esposto, revocalo con @BotFather e sostituiscilo.</p>
+                        </div>
+
+                        <div class="flex items-center justify-between flex-wrap gap-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-sky-500/10 text-sky-400 p-2.5 rounded-lg border border-sky-500/20">
+                                    <i class="fa-brands fa-telegram text-base"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-bold text-white">Notifiche Telegram</h3>
+                                    <p class="text-xs text-slate-400">Associazione chat per il <span
+                                            id="settings-profile-badge"
+                                            class="text-indigo-400 font-bold">Profilo</span>.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center space-x-3 flex-wrap gap-2">
+                                <div id="inherit-option-container"
+                                    class="flex items-center space-x-2 bg-slate-950/60 border border-slate-800 px-3 py-1.5 rounded-xl">
+                                    <input type="checkbox" id="s-inherit-main-tg"
+                                        onchange="toggleInheritTelegram(this.checked)"
+                                        class="w-4 h-4 accent-indigo-600 rounded cursor-pointer">
+                                    <label for="s-inherit-main-tg" class="text-xs text-slate-300 cursor-pointer">Usa
+                                        Telegram Principale</label>
+                                </div>
+                                <button type="button" onclick="sendTestNotification()"
+                                    class="text-xs bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center space-x-1.5">
+                                    <i class="fa-solid fa-paper-plane text-[10px]"></i>
+                                    <span>Test Notifica</span>
+                                </button>
+                                <button type="button" onclick="resetTelegramProfile()"
+                                    class="text-xs bg-red-600/20 text-red-300 border border-red-500/30 hover:bg-red-600/30 px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center space-x-1.5"
+                                    title="Scollega Telegram per questo profilo">
+                                    <i class="fa-solid fa-unlink text-[10px]"></i>
+                                    <span>Scollega Telegram</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="telegram-dedicate-box"
+                            class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-5 mt-2 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div class="space-y-3 w-full">
+                                <div class="text-xs text-slate-400">Utente Telegram collegato a questo profilo:</div>
+                                <div id="s-chat-id-display"
+                                    class="font-mono text-xs text-slate-300 bg-slate-900/80 px-3 py-2 rounded-lg border border-slate-800 inline-block">
+                                    Verifica in corso...
+                                </div>
+                                <div id="telegram-status-msg" class="text-xs text-slate-400 italic">
+                                    Inquadra il QR code per associare una chat Telegram dedicata.
+                                </div>
+                            </div>
+
+                            <div
+                                class="flex flex-col items-center justify-center bg-white p-3 rounded-xl shadow-lg border border-slate-700 flex-shrink-0">
+                                <div id="telegram-qrcode"
+                                    class="w-32 h-32 flex items-center justify-center text-slate-900 text-xs text-center">
+                                    Caricamento QR...
+                                </div>
+                                <span class="text-[10px] text-slate-600 font-semibold mt-2 uppercase tracking-wider">QR
+                                    Dedicato</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD 3: Reset Applicazione -->
+                    <div class="card-section rounded-2xl p-6 space-y-4 bg-red-950/10 border border-red-900/30">
+                        <div class="flex items-center justify-between flex-wrap gap-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-red-500/10 text-red-400 p-2.5 rounded-lg border border-red-500/20">
+                                    <i class="fa-solid fa-triangle-exclamation text-base"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-bold text-white">Area Pericolosa</h3>
+                                    <p class="text-xs text-slate-400">Ripristina l'applicazione ai dati di fabbrica.</p>
+                                </div>
+                            </div>
+                            <button onclick="confirmResetApp()"
+                                class="bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow-lg shadow-red-600/20 cursor-pointer">
+                                Resetta Applicazione
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 bg-slate-950/50 py-4 text-center text-xs text-slate-500">
+        Nuvio Release Tracker &bull; Multi-Profile Notification Manager - Version <span id="app-version"></span>
+    </footer>
+
+    <!-- App JavaScript -->
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>

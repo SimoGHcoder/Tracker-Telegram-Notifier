@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.log
+
+# File di ambiente e credenziali private
+.env
+data/users.json
+data/config.json
+
+# Archivi del progetto
+*.rar
+*.zip
+*.7z
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

@@ -1,0 +1,15 @@
+{
+  "ui_language": "it",
+  "dubbing_language": "ita",
+  "check_interval_hours": 4,
+  "telegram": {
+    "bot_token": ""
+  },
+  "first_run_completed": false,
+  "manual_shows": [],
+  "nuvio": {
+    "email": "",
+    "password": "",
+    "profile_id": 1
+  }
+}
